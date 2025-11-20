@@ -6,7 +6,7 @@ var path = require("path");
 require("dotenv").config();
 require("dotenv").config();
 const MongoClient = require("mongodb").MongoClient;
-const url = "mongodb+srv://Cluster01780:Jshdh6367@project.spzmh.mongodb.net/";
+const url = process.env.DB_URL;
 const app = express();
 app.use(express.json());
 app.use(morgan("short"));
@@ -29,6 +29,18 @@ let db;
     console.log("connected");
   });
 
+app.use("/image", (req, res, next) => {
+  const filePath = path.join(__dirname, "static", req.url);
+  fs.access(filePath, fs.constants.F_OK, (err) => {
+    if (err) return next();
+    res.sendFile(filePath);
+  });
+});
+
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+});
 
 
 
