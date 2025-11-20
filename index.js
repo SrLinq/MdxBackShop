@@ -56,5 +56,14 @@ app.get("/collection/:collectionName",  (req, res) => {
   });
 });
 
+app.put("/collection/:colectionName/:id",  (req, res) => {
+
+});
+
+app.get("/search", async (req, res) => {});
+
+app.post("/collection/:",  (req, res) => {
+
+});
 
 app.listen(3000);
