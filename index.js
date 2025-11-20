@@ -13,13 +13,16 @@ app.use(express.json());
 app.use(morgan("short"));
 
 app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Credentials", "true");
-  res.setHeader("Access-Control-Allow-Methods", "GET,HEAD,OPTIONS,POST,PUT");
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers"
-  );
+  const origin = req.headers.origin || "*";
+
+  res.header("Access-Control-Allow-Origin", origin);
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header("Access-Control-Allow-Methods", "GET,HEAD,OPTIONS,POST,PUT,PATCH,DELETE");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
+
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
 
   next();
 });
