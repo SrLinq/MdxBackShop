@@ -63,12 +63,42 @@ req.collection.findOne({_id: new ObjectID(req.params.id)}, (e,result)=>{
 })
 });
 
-app.get("/search", (req, res) => {
+app.get("/collection/:collectionName/search", (req, res, next) => {
+    const search = req.query.search;
 
+    if (isNaN(search)) {
+        console.log("Searching text:", search);
+        const stringSearch = String(search);
+
+        // Fix: Pass the string directly to $regex, and use $options
+        const regExp = { $regex: stringSearch, $options: 'i' };
+
+        const query = {
+            $or: [{ name: regExp }, { location: regExp }, { about: regExp }],
+        };
+
+        req.collection.find(query).toArray((e, results) => {
+            if (e) return next(e);
+            res.send(results);
+        });
+
+    } else {
+        console.log("Searching number:", search);
+        let numbSearch = Number(search);
+        const query = { $or: [{ price: numbSearch }, { stock: numbSearch }] };
+        
+
+        req.collection.find(query).toArray((e, results) => {
+            if (e) return next(e);
+            res.send(results);
+        });
+    }
 });
-
-app.post("/collection/:collectionName",  (req, res) => {
-
-});
+app.post("/collection/:collectionName/order",  (req, res) => {
+const order= req.body
+console.log(order)
+req.collection.insertOne(order)
+res.send("okay")
+}); 
 
 app.listen(3000);
