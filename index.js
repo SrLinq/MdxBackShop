@@ -42,6 +42,19 @@ app.use((req, res, next) => {
   next();
 });
 
+app.param("collectionName", (req, res, next,collectionName) => {
+    req.collection = db.collection(collectionName);
+   return  next();
+
+});
+
+app.get("/collection/:collectionName",  (req, res) => {
+  console.log(req.collection);
+  req.collection.find({}).toArray((e,results)=>{
+    if(e)return res.status(401).json(e)
+        res.send(results)
+  });
+});
 
 
 app.listen(3000);
