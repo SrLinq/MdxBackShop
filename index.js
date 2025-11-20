@@ -55,13 +55,16 @@ app.get("/collection/:collectionName",  (req, res) => {
         res.send(results)
   });
 });
-
+const ObjectID=require("mongodb").ObjectID
 app.put("/collection/:colectionName/:id",  (req, res) => {
-
+req.collection.findOne({_id: new ObjectID(req.params.id)}, (e,result)=>{
+  if(e) return next(e)
+      res.send(result)
+})
 });
 
 app.get("/search", (req, res) => {
-  
+
 });
 
 app.post("/collection/:collectionName",  (req, res) => {
