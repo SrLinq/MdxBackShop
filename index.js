@@ -1,13 +1,14 @@
 const express = require("express");
-const http = require("http");
 const morgan = require("morgan");
 const fs = require("fs");
-var path = require("path");
+const path = require("path");
+const { MongoClient } = require("mongodb");
+
 require("dotenv").config();
-require("dotenv").config();
-const MongoClient = require("mongodb").MongoClient;
+
 const url = process.env.DB_URL;
 const app = express();
+
 app.use(express.json());
 app.use(morgan("short"));
 
@@ -20,19 +21,27 @@ app.use((req, res, next) => {
     "Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers"
   );
 
-  next();  
+  next();
 });
+
+// Connect to MongoDB
 let db;
-// Conect to MongoDB
-  MongoClient.connect(url, (error, client) => {
-    db = client.db("CST3144");
-    console.log("connected");
-  });
+MongoClient.connect(url, (error, client) => {
+  if (error) {
+    console.error("Failed to connect to MongoDB:", error);
+    return;
+  }
+
+  db = client.db("CST3144");
+  console.log("connected");
+});
 
 app.use("/image", (req, res, next) => {
   const filePath = path.join(__dirname, "static", req.url);
+
   fs.access(filePath, fs.constants.F_OK, (err) => {
     if (err) return next();
+
     res.sendFile(filePath);
   });
 });
@@ -42,63 +51,69 @@ app.use((req, res, next) => {
   next();
 });
 
-app.param("collectionName", (req, res, next,collectionName) => {
-    req.collection = db.collection(collectionName);
-   return  next();
-
+app.param("collectionName", (req, res, next, collectionName) => {
+  req.collection = db.collection(collectionName);
+  return next();
 });
 
-app.get("/collection/:collectionName",  (req, res) => {
-  console.log(req.collection);
-  req.collection.find({}).toArray((e,results)=>{
-    if(e)return res.status(401).json(e)
-        res.send(results)
+app.get("/collection/:collectionName", (req, res) => {
+  req.collection.find({}).toArray((error, results) => {
+    if (error) return res.status(401).json(error);
+    res.send(results);
   });
 });
-const ObjectID=require("mongodb").ObjectID
-app.put("/collection/:colectionName/:id",  (req, res) => {
-req.collection.findOne({_id: new ObjectID(req.params.id)}, (e,result)=>{
-  if(e) return next(e)
-      res.send(result)
-})
+const ObjectID= require("mongodb").ObjectId
+app.put("/collection/:collectionName/:id", (req, res, next) => {
+  const increment = Number(req.body.stock);
+ console.log(increment)
+ console.log(req.params.id)
+  if (Number.isNaN(increment)) {
+    return res.status(400).send("stock must be a number");
+  }
+
+  req.collection.updateOne(
+    { _id: new ObjectID(req.params.id) },
+    { $inc: { stock: increment } },
+    (error, result) => {
+      if (error) return next(error);
+
+      if (result.matchedCount === 0) {
+        return res.status(404).send("Document not found");
+      }
+
+      res.send({ modifiedCount: result.modifiedCount });
+    }
+  );
 });
 
 app.get("/collection/:collectionName/search", (req, res, next) => {
-    const search = req.query.search;
+  const { search } = req.query;
 
-    if (isNaN(search)) {
-        console.log("Searching text:", search);
-        const stringSearch = String(search);
+  if (isNaN(search)) {
+    const regExp = { $regex: String(search), $options: "i" };
+    const query = { $or: [{ name: regExp }, { location: regExp }, { about: regExp }] };
 
-        // Fix: Pass the string directly to $regex, and use $options
-        const regExp = { $regex: stringSearch, $options: 'i' };
+    return req.collection.find(query).toArray((error, results) => {
+      if (error) return next(error);
+      res.send(results);
+    });
+  }
 
-        const query = {
-            $or: [{ name: regExp }, { location: regExp }, { about: regExp }],
-        };
+  const numericSearch = Number(search);
+  const query = { $or: [{ price: numericSearch }, { stock: numericSearch }] };
 
-        req.collection.find(query).toArray((e, results) => {
-            if (e) return next(e);
-            res.send(results);
-        });
-
-    } else {
-        console.log("Searching number:", search);
-        let numbSearch = Number(search);
-        const query = { $or: [{ price: numbSearch }, { stock: numbSearch }] };
-        
-
-        req.collection.find(query).toArray((e, results) => {
-            if (e) return next(e);
-            res.send(results);
-        });
-    }
+  req.collection.find(query).toArray((error, results) => {
+    if (error) return next(error);
+    res.send(results);
+  });
 });
-app.post("/collection/:collectionName/order",  (req, res) => {
-const order= req.body
-console.log(order)
-req.collection.insertOne(order)
-res.send("okay")
-}); 
+
+app.post("/collection/:collectionName/order", (req, res) => {
+  const order = req.body;
+  console.log(order);
+
+  req.collection.insertOne(order);
+  res.send("okay");
+});
 
 app.listen(3000);
