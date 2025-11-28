@@ -1,5 +1,4 @@
 const express = require("express");
-const morgan = require("morgan");
 const fs = require("fs");
 const path = require("path");
 const { MongoClient } = require("mongodb");
@@ -10,7 +9,6 @@ const url = process.env.DB_URL;
 const app = express();
 
 app.use(express.json());
-app.use(morgan("short"));
 
 app.use((req, res, next) => {
   const origin = req.headers.origin || "*";
