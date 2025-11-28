@@ -17,8 +17,14 @@ app.use((req, res, next) => {
 
   res.header("Access-Control-Allow-Origin", origin);
   res.header("Access-Control-Allow-Credentials", "true");
-  res.header("Access-Control-Allow-Methods", "GET,HEAD,OPTIONS,POST,PUT,PATCH,DELETE");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
+  res.header(
+    "Access-Control-Allow-Methods",
+    "GET,HEAD,OPTIONS,POST,PUT,PATCH,DELETE"
+  );
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, X-Requested-With"
+  );
 
   if (req.method === "OPTIONS") {
     return res.sendStatus(204);
@@ -27,7 +33,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Connect to MongoDB
 let db;
 MongoClient.connect(url, (error, client) => {
   if (error) {
@@ -65,11 +70,11 @@ app.get("/collection/:collectionName", (req, res) => {
     res.send(results);
   });
 });
-const ObjectID= require("mongodb").ObjectId
+const ObjectID = require("mongodb").ObjectId;
 app.put("/collection/:collectionName/:id", (req, res, next) => {
   const increment = Number(req.body.stock);
- console.log(increment)
- console.log(req.params.id)
+  console.log(increment);
+  console.log(req.params.id);
   if (Number.isNaN(increment)) {
     return res.status(400).send("stock must be a number");
   }
@@ -89,12 +94,14 @@ app.put("/collection/:collectionName/:id", (req, res, next) => {
   );
 });
 
-app.get("/collection/:collectionName/search", (req, res, next) => {
-  const { search } = req.query;
+app.get("/collection/:collectionName/search=:search", (req, res, next) => {
+  const { search } = req.params;
 
   if (isNaN(search)) {
     const regExp = { $regex: String(search), $options: "i" };
-    const query = { $or: [{ name: regExp }, { location: regExp }, { about: regExp }] };
+    const query = {
+      $or: [{ name: regExp }, { location: regExp }, { about: regExp }],
+    };
 
     return req.collection.find(query).toArray((error, results) => {
       if (error) return next(error);
