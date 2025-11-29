@@ -121,7 +121,7 @@ app.post("/collection/:collectionName/order", (req, res) => {
   console.log(order);
 
   req.collection.insertOne(order);
-  res.send("okay");
+  res.send({ order: "success" });
 });
 
 app.listen(3000);
