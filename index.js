@@ -57,6 +57,13 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use((req, res, next) => {
+  if (!db) {
+    return res.status(503).send("Database not connected yet");
+  }
+  next();
+});
+
 app.param("collectionName", (req, res, next, collectionName) => {
   req.collection = db.collection(collectionName);
   return next();
@@ -71,8 +78,6 @@ app.get("/collection/:collectionName", (req, res) => {
 const ObjectID = require("mongodb").ObjectId;
 app.put("/collection/:collectionName/:id", (req, res, next) => {
   const increment = Number(req.body.stock);
-  console.log(increment);
-  console.log(req.params.id);
   if (Number.isNaN(increment)) {
     return res.status(400).send("stock must be a number");
   }
@@ -92,11 +97,13 @@ app.put("/collection/:collectionName/:id", (req, res, next) => {
   );
 });
 
-app.get("/collection/:collectionName/search=:search", (req, res, next) => {
-  const { search } = req.params;
+app.get("/collection/:collectionName/search", (req, res, next) => {
+  const { q } = req.query;
+  console.log(q);
+  if (!q) return res.status(400).send("Missing search query 'q'");
 
-  if (isNaN(search)) {
-    const regExp = { $regex: String(search), $options: "i" };
+  if (isNaN(q)) {
+    const regExp = { $regex: String(q), $options: "i" };
     const query = {
       $or: [{ name: regExp }, { location: regExp }, { about: regExp }],
     };
@@ -107,7 +114,7 @@ app.get("/collection/:collectionName/search=:search", (req, res, next) => {
     });
   }
 
-  const numericSearch = Number(search);
+  const numericSearch = Number(q);
   const query = { $or: [{ price: numericSearch }, { stock: numericSearch }] };
 
   req.collection.find(query).toArray((error, results) => {
