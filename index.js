@@ -82,17 +82,13 @@ app.put("/collection/:collectionName/:id", (req, res, next) => {
     return res.status(400).send("stock must be a number");
   }
 
-  req.collection.updateOne(
+  req.collection.findOneAndUpdate(
     { _id: new ObjectID(req.params.id) },
     { $inc: { stock: increment } },
-    (error, result) => {
+    { returnDocument: "after" },
+    (error, results) => {
       if (error) return next(error);
-
-      if (result.matchedCount === 0) {
-        return res.status(404).send("Document not found");
-      }
-
-      res.send(result);
+      res.send(results.value);
     }
   );
 });
