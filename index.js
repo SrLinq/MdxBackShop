@@ -92,7 +92,7 @@ app.put("/collection/:collectionName/:id", (req, res, next) => {
         return res.status(404).send("Document not found");
       }
 
-      res.send({ modifiedCount: result.modifiedCount });
+      res.send(result);
     }
   );
 });
