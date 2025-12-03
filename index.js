@@ -95,7 +95,6 @@ app.put("/collection/:collectionName/:id", (req, res, next) => {
 
 app.get("/collection/:collectionName/search", (req, res, next) => {
   const { q } = req.query;
-  console.log(q);
   if (!q) return res.status(400).send("Missing search query 'q'");
 
   if (isNaN(q)) {
