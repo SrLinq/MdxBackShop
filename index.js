@@ -1,15 +1,20 @@
+// Import Express framework
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
 const { MongoClient } = require("mongodb");
 
+// Load environment variables from .env file
 require("dotenv").config();
 
 const url = process.env.DB_URL;
+// Initialize Express application
 const app = express();
 
+// Enable JSON body parsing
 app.use(express.json());
 
+// Configure CORS to allow cross-origin requests
 app.use((req, res, next) => {
   const origin = req.headers.origin || "*";
 
@@ -31,7 +36,9 @@ app.use((req, res, next) => {
   next();
 });
 
-let db;
+let db; // Database connection variable
+
+// Connect to MongoDB
 MongoClient.connect(url, (error, client) => {
   if (error) {
     console.error("Failed to connect to MongoDB:", error);
@@ -42,6 +49,7 @@ MongoClient.connect(url, (error, client) => {
   console.log("connected");
 });
 
+// Middleware to serve static images from the 'static' directory
 app.use("/image", (req, res, next) => {
   const filePath = path.join(__dirname, "static", req.url);
 
@@ -52,11 +60,13 @@ app.use("/image", (req, res, next) => {
   });
 });
 
+// Middleware to log each request with timestamp
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   next();
 });
 
+// Middleware to ensure database connection exists before processing requests
 app.use((req, res, next) => {
   if (!db) {
     return res.status(503).send("Database not connected yet");
@@ -64,18 +74,23 @@ app.use((req, res, next) => {
   next();
 });
 
+// Parameter middleware to select the specific MongoDB collection
 app.param("collectionName", (req, res, next, collectionName) => {
   req.collection = db.collection(collectionName);
   return next();
 });
 
+// Route: Get all documents from a collection
 app.get("/collection/:collectionName", (req, res) => {
   req.collection.find({}).toArray((error, results) => {
     if (error) return res.status(401).json(error);
     res.send(results);
   });
 });
+
 const ObjectID = require("mongodb").ObjectId;
+
+// Route: Update the stock of a specific item by ID
 app.put("/collection/:collectionName/:id", (req, res, next) => {
   const increment = Number(req.body.stock);
   if (Number.isNaN(increment)) {
@@ -93,6 +108,7 @@ app.put("/collection/:collectionName/:id", (req, res, next) => {
   );
 });
 
+// Route: Search for items in a collection by query 'q'
 app.get("/collection/:collectionName/search", (req, res, next) => {
   const { q } = req.query;
   if (!q) return res.status(400).send("Missing search query 'q'");
@@ -118,6 +134,7 @@ app.get("/collection/:collectionName/search", (req, res, next) => {
   });
 });
 
+// Route: Create a new order
 app.post("/collection/:collectionName/order", (req, res) => {
   const order = req.body;
   console.log(order);
@@ -126,4 +143,5 @@ app.post("/collection/:collectionName/order", (req, res) => {
   res.send({ order: "success" });
 });
 
+// Start server on port 3000
 app.listen(3000);
